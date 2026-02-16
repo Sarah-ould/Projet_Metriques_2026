@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Atelier — Vent Marseille</title>
+
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    #chart { width: 100%; height: 520px; }
+    #status { margin-top: 12px; white-space: pre-wrap; color:#444; }
+    .card { background:#fff; border:1px solid #eee; border-radius:14px; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,.06); }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>Atelier — Répartition du vent à Marseille</h1>
+    <p>Graphique : camembert (PieChart). Données Open-Meteo (wind_speed_10m).</p>
+
+    <div class="card">
+      <div id="chart"></div>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(init);
+
+    async function init() {
+      try {
+        const rows = await fetchWindBins();
+        drawChart(rows);
+        document.getElementById('status').textContent =
+          `OK — ${rows.length} catégories chargées depuis /marseille_vent`;
+      } catch (e) {
+        document.getElementById('status').textContent =
+          "Erreur: " + (e?.message || e);
+        console.error(e);
+      }
+    }
+
+    async function fetchWindBins() {
+      const res = await fetch('/marseille_vent', { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status} sur /marseille_vent`);
+      const json = await res.json();
+      return json.map(x => [String(x.categorie), Number(x.count)]);
+    }
+
+    function drawChart(rows) {
+      const data = new google.visualization.DataTable();
+      data.addColumn('string', 'Catégorie');
+      data.addColumn('number', 'Nombre d’heures');
+      data.addRows(rows);
+
+      const options = {
+        title: 'Vent à Marseille — répartition par intensité (heures)',
+        legend: { position: 'right' },
+        pieHole: 0.35
+      };
+
+      const chart = new google.visualization.PieChart(document.getElementById('chart'));
+      chart.draw(data, options);
+    }
+  </script>
+</body>
+</html>
