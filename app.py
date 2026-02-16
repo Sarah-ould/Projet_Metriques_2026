@@ -63,6 +63,23 @@ def api_marseille_vent():
             bins["Très fort (50+ km/h)"] += 1
 
     return jsonify([{"categorie": k, "count": v} for k, v in bins.items()])
+    
+    @app.get("/marseille_wind_now")
+def api_marseille_wind_now():
+    # Marseille : lat 43.2965, lon 5.3698
+    url = "https://api.open-meteo.com/v1/forecast?latitude=43.2965&longitude=5.3698&current=wind_speed_10m"
+    response = requests.get(url, timeout=15)
+    data = response.json()
+
+    speed = data.get("current", {}).get("wind_speed_10m", None)
+
+    return jsonify({
+        "city": "Marseille",
+        "metric": "wind_speed_10m",
+        "unit": "km/h",
+        "value": speed
+    })
+
 
 
 @app.route("/atelier")
