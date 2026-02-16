@@ -13,27 +13,22 @@ def hello_world():
 def contact():
     return render_template("contact.html")
 
-
 @app.get("/paris")
 def api_paris():
-    
     url = "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&hourly=temperature_2m"
-    response = requests.get(url)
+    response = requests.get(url, timeout=15)
     data = response.json()
 
     times = data.get("hourly", {}).get("time", [])
     temps = data.get("hourly", {}).get("temperature_2m", [])
 
     n = min(len(times), len(temps))
-    result = [
-        {"datetime": times[i], "temperature_c": temps[i]}
-        for i in range(n)
-    ]
-
+    result = [{"datetime": times[i], "temperature_c": temps[i]} for i in range(n)]
     return jsonify(result)
+
+# -------- Atelier (option 1 : répartition vent) --------
 @app.get("/marseille_vent")
 def api_marseille_vent():
-    # Marseille : lat 43.2965, lon 5.3698
     url = "https://api.open-meteo.com/v1/forecast?latitude=43.2965&longitude=5.3698&hourly=wind_speed_10m"
     response = requests.get(url, timeout=15)
     data = response.json()
@@ -63,10 +58,10 @@ def api_marseille_vent():
             bins["Très fort (50+ km/h)"] += 1
 
     return jsonify([{"categorie": k, "count": v} for k, v in bins.items()])
-    
-    @app.get("/marseille_wind_now")
+
+# -------- Atelier (option 2 : vent actuel pour Gauge) --------
+@app.get("/marseille_wind_now")
 def api_marseille_wind_now():
-    # Marseille : lat 43.2965, lon 5.3698
     url = "https://api.open-meteo.com/v1/forecast?latitude=43.2965&longitude=5.3698&current=wind_speed_10m"
     response = requests.get(url, timeout=15)
     data = response.json()
@@ -80,13 +75,9 @@ def api_marseille_wind_now():
         "value": speed
     })
 
-
-
 @app.route("/atelier")
 def atelier():
     return render_template("atelier.html")
-
-
 
 @app.route("/rapport")
 def mongraphique():
@@ -96,9 +87,6 @@ def mongraphique():
 def monhistogramme():
     return render_template("histogramme.html")
 
-
-
-
 # Ne rien mettre après ce commentaire
 if __name__ == "__main__":
-  app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
