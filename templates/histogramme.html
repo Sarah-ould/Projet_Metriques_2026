@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Histogramme — Paris</title>
+
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    #chart { width: 100%; height: 520px; }
+    #status { margin-top: 12px; white-space: pre-wrap; }
+  </style>
+</head>
+
+<body>
+  <h1>Histogramme — Températures à Paris</h1>
+  <p>Affiche les 24 prochaines heures (pour que ça reste lisible).</p>
+
+  <div id="chart"></div>
+  <div id="status"></div>
+
+  <script>
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(init);
+
+    async function init() {
+      try {
+        const rows = await fetchParisData();
+        drawChart(rows);
+        showStatus(`OK — ${rows.length} barres chargées depuis /paris`);
+      } catch (err) {
+        showStatus("Erreur: " + (err?.message || err));
+        console.error(err);
+      }
+    }
+
+    async function fetchParisData() {
+      const res = await fetch('/paris', { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status} sur /paris`);
+
+      const json = await res.json();
+      const sliced = json.slice(0, 24); // 24 points (1 jour)
+
+      // rows: [label, value]
+      return sliced.map(p => {
+        const label = (p.datetime || "").replace('T', ' ').slice(0, 16);
+        return [label, Number(p.temperature_c)];
+      });
+    }
+
+    function drawChart(rows) {
+      const data = new google.visualization.DataTable();
+      data.addColumn('string', 'Date/Heure');
+      data.addColumn('number', 'Température (°C)');
+      data.addRows(rows);
+
+      const options = {
+        title: 'Température à Paris (24 prochaines heures)',
+        legend: { position: 'none' },
+        hAxis: { title: 'Date/Heure', slantedText: true, slantedTextAngle: 45 },
+        vAxis: { title: '°C' }
+      };
+
+      const chart = new google.visualization.ColumnChart(document.getElementById('chart'));
+      chart.draw(data, options);
+    }
+
+    function showStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+  </script>
+</body>
+</html>
